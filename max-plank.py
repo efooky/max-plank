@@ -7,7 +7,7 @@ import os
 homedir = os.path.expanduser('~')
 
 #copy black theme to plank themes path
-subprocess.call('cp '+homedir+'/max_plank/dock.theme '+homedir+'/.local/share/plank/themes/Black/dock.theme',shell=True)
+subprocess.call('cp '+homedir+'/max-plank/dock.theme '+homedir+'/.local/share/plank/themes/Black/dock.theme',shell=True)
 
 while True:
     try:
