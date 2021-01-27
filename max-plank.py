@@ -5,12 +5,31 @@ import time
 import threading
 import subprocess
 import os
+import json
 
-# crash
-# config externo
 # plank em outras posiçoes
+# ler config durante operacao
 
 homedir = os.path.expanduser('~')
+previous = None
+resolution = {'hor':0,'ver':0}
+config = {'delay':600,'transition':150,'min_opacity':0.1,'max_opacity':0.9}
+try:
+    with open(homedir+'/.config/max-plank/config.json','r') as config_f:
+        config_n = json.load(config_f)
+    for item in config_n:
+        config[item] = float(config_n[item])
+        print(config[item])
+    config['delay'] = int(config['delay'])
+    config['transition'] = int(config['transition'])
+    print('Config:',config)
+except Exception as e:
+    print(e)
+    subprocess.call('mkdir '+homedir+'/.config/max-plank',shell=True)
+with open(homedir+'/.config/max-plank/config.json','w') as config_f:
+    json.dump(config,config_f)
+delay = config['delay']/1000
+
 win = Gtk.Window()
 #win.connect("destroy", Gtk.main_quit)
 win.modify_bg(Gtk.StateType.NORMAL, Gdk.color_parse("black"))
@@ -20,23 +39,21 @@ win.set_decorated(False)
 win.set_type_hint(Gdk.WindowTypeHint.DOCK)
 win.show_all()
 win.set_opacity(0)
-previous = 0
-resolution = {'hor':0,'ver':0}
 
 def update(maximized):
     # definir opacidade minima e maxima
     try:
-        min_opacity = 0.1
-        max_opacity = 0.9
-        n = 4
-        t = 0.15
+        min_opacity = config['min_opacity']
+        max_opacity = config['max_opacity']
+        n = 5
+        t = config['transition']/1000
         step = (max_opacity-min_opacity)/n
         step_time = t/n
         if maximized:
             opacity = min_opacity
             while opacity<max_opacity:
                 opacity += step
-                #print(opacity)
+                print('Opacity:',opacity)
                 win.set_opacity(opacity)
                 time.sleep(step_time)
             win.set_opacity(max_opacity)
@@ -44,7 +61,7 @@ def update(maximized):
             opacity = max_opacity
             while opacity>min_opacity:
                 opacity -= step
-                #print(opacity)
+                print('Opacity:',opacity)
                 win.set_opacity(opacity)
                 time.sleep(step_time)
             win.set_opacity(min_opacity)
@@ -52,7 +69,7 @@ def update(maximized):
         print(e)
 
 def check():
-    global previous, resolution
+    global previous, resolution, config
     try:
         theme = str(subprocess.check_output('dconf read /net/launchpad/plank/docks/dock1/theme',shell=True)).split("'")[1]
         with open(homedir+'/.local/share/plank/themes/'+theme+'/dock.theme','r') as theme_file:
@@ -114,10 +131,14 @@ def check():
     except Exception as e:
         print('erro maximized',e)
         maximized = 0
+    if previous is None:
+        win.set_opacity(config['min_opacity'])
+        previous = 0
     if maximized != previous:
+        print('Maximized:',maximized)
         update(maximized)
     previous = maximized
-    tr = threading.Timer(0.6,check)
+    tr = threading.Timer(config['delay']/1000,check)
     tr.start()
     #time.sleep(0.6)
     #check()
